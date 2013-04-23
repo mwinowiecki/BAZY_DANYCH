@@ -53,8 +53,8 @@ CREATE TABLE pojazd (
 
 CREATE TABLE stanowisko (
   idstanowisko INT IDENTITY(1,1) PRIMARY KEY,
-  stanowisko VARCHAR(15) NOT NULL,
-  pensja MONEY NOT NULL,
+  stanowisko VARCHAR(25) NOT NULL,
+  pensja_netto MONEY NOT NULL,
   opis VARCHAR(50) CHECK(LEN(opis)>10) NOT NULL,
 );
 
@@ -84,7 +84,8 @@ CREATE TABLE faktura (
 
 CREATE TABLE zamowienie (
   idpojazd INT CONSTRAINT idpojazd_fk FOREIGN KEY(idpojazd) REFERENCES pojazd(idpojazd),
-  idfaktura INT CONSTRAINT idfaktura_fk FOREIGN KEY(idfaktura) REFERENCES faktura(idfaktura)
+  idfaktura INT CONSTRAINT idfaktura_fk FOREIGN KEY(idfaktura) REFERENCES faktura(idfaktura),
+  CONSTRAINT zamowienie_pk PRIMARY KEY(idpojazd,idfaktura)
 );
 
 --######################### WPISYWANIE DANYCH #########################
@@ -96,6 +97,7 @@ INSERT INTO adres VALUES ('MALINOWA','8','CHOJNICE','89-600');
 INSERT INTO adres VALUES ('BOHATEROW WESTERPLATTE','3','TUCHOLA','89-501');
 INSERT INTO adres VALUES ('CEGIELNIANA','6A/8','TUCHOLA','89-501');
 INSERT INTO adres VALUES ('KORONOWSKA','9','BYDGOSZCZ','85-405');
+INSERT INTO adres VALUES ('UCZNIOWSKA','4','GDANSK','80-530');
 
 
 --### TAB adres_docelowy
@@ -116,6 +118,39 @@ INSERT INTO klient VALUES (5,'ZENON','INTERES','70022636894','9645232156');
 INSERT INTO filia VALUES (6);
 INSERT INTO filia VALUES (3);
 
+--### TAB typ_pojazdu
+INSERT INTO typ_pojazdu VALUES ('BUS',1,'PRZEWOZ DO 8 OSOB');
+INSERT INTO typ_pojazdu VALUES ('DOSTAWCZY',2.5,'PRZEWOZ TOWAROW');
+INSERT INTO typ_pojazdu VALUES ('CIEZAROWY',8,'PRZEWOZ DUZYCH TOWAROW');
+
+--### TAB pojazd
+INSERT INTO pojazd VALUES (1,'VOLKSWAGEN','TRANSPORTER','WE A567C');
+INSERT INTO pojazd VALUES (2,'OPEL','VIVARO','WX 78645');
+INSERT INTO pojazd VALUES (2,'FIAT','DUCATO','WE 80365');
+INSERT INTO pojazd VALUES (3,'SCANIA','R420','WY 54564');
+INSERT INTO pojazd VALUES (3,'MERCEDES','ACTROS','WY 88893');
+
+--### TAB stanowisko
+INSERT INTO stanowisko VALUES ('KIEROWCA CIEZAROWY',3800,'PRAWO JAZDY KAT. B, KAT.C+E');
+INSERT INTO stanowisko VALUES ('KIEROWCA SAM. DOSTAW.',3000,'PRAWO JAZDY KAT. B+E');
+INSERT INTO stanowisko VALUES ('KIEROWCA SAM. DO 3,5T',2800,'PRAWO JAZDY KAT. B');
+INSERT INTO stanowisko VALUES ('KSIEGOWY',5500,'PELNA KSIEGOWOSC');
+INSERT INTO stanowisko VALUES ('OBSLUGA ZAMOWIEN',2500,'ODBIOR ZAMOWIEN OD KLIENTOW');
+
+--TAB pracownik
+INSERT INTO pracownik VALUES (1,4,1,'ZENON','WELON','83061152338');
+INSERT INTO pracownik VALUES (2,6,4,'AGATA','MALYSZ','84032168446');
+INSERT INTO pracownik VALUES (1,7,5,'WALDEMAR','PAWLAK','69121445298');
+INSERT INTO pracownik VALUES (1,2,1,'DONALD','TRAWKA','65071538457');
+
+--TAB faktura
+INSERT INTO faktura VALUES (1,1,1,153,200,0.23,200*1.23,'2005-03-15','2005-03-18');
+INSERT INTO faktura VALUES (5,4,3,30,50,0.23,50*1.23,'2009-09-21','2009-09-22');
+
+--TAB zamowienie
+INSERT INTO zamowienie VALUES(4,1);
+INSERT INTO zamowienie VALUES(2,2);
+
 --update adres set miejscowosc=UPPER(miejscowosc);
 --######################## WYSWIETLENIE TABEL #########################
 
@@ -131,4 +166,4 @@ SELECT * FROM faktura;
 SELECT * FROM zamowienie;
 
 --SELECT * FROM filia JOIN adres ON filia.idadres=adres.idadres;
---DBCC CHECKIDENT ( adres,RESEED,0);
+--DBCC CHECKIDENT (FAKTURA,RESEED,0);
