@@ -99,7 +99,6 @@ INSERT INTO adres VALUES ('CEGIELNIANA','6A/8','TUCHOLA','89-501');
 INSERT INTO adres VALUES ('KORONOWSKA','9','BYDGOSZCZ','85-405');
 INSERT INTO adres VALUES ('UCZNIOWSKA','4','GDANSK','80-530');
 
-
 --### TAB adres_docelowy
 INSERT INTO adres_docelowy VALUES ('JAN','KOWALSKI','GRUNWALDZKA','146','GDANSK','80-264');
 INSERT INTO adres_docelowy VALUES ('MAREK','MARECKI','ULICZNA','23','WARSZAWA','05-077');
@@ -151,7 +150,6 @@ INSERT INTO faktura VALUES (5,4,3,30,50,0.23,50*1.23,'2009-09-21','2009-09-22');
 INSERT INTO zamowienie VALUES(4,1);
 INSERT INTO zamowienie VALUES(2,2);
 
---update adres set miejscowosc=UPPER(miejscowosc);
 --######################## WYSWIETLENIE TABEL #########################
 
 SELECT * FROM adres;
@@ -165,5 +163,36 @@ SELECT * FROM pracownik;
 SELECT * FROM faktura;
 SELECT * FROM zamowienie;
 
+--### SAMOCHODY
+SELECT p.marka, p.model, p.nr_rej, t.typ, t.cena_netto_km, t.opis
+FROM pojazd p JOIN typ_pojazdu t ON p.idtyp_pojazdu=t.idtyp_pojazdu
+ORDER BY p.marka, p.model;
+
+--### MIEJSCA PRACY PRACOWNIKOW
+SELECT p.imie, p.nazwisko, a.ulica, a.nr_domu, a.miejscowosc
+FROM pracownik p JOIN filia f ON p.idfilia=f.idfilia
+JOIN adres a ON f.idadres=a.idadres
+ORDER BY p.nazwisko, p.imie;
+
+--### ADRESY ZAMIESZKANIA KLIENTOW
+SELECT k.imie, k.nazwisko, k.PESEL, a.ulica, a.nr_domu, a.miejscowosc
+FROM klient k JOIN adres a ON k.idadres=a.idadres
+ORDER BY k.nazwisko, k.imie;
+
+--### UTWORZONE FAKTURY
+SELECT k.imie, k.nazwisko, ad.imie, ad.nazwisko, ad.ulica, ad.nr_domu, ad.miejscowosc, f.dystans_km, f.dystans_km, f.cena_razem_brutto
+FROM klient k JOIN faktura f ON k.idklient=f.idklient
+JOIN adres_docelowy ad ON ad.idadres_docelowy=f.idadres_docelowy
+ORDER BY k.nazwisko, k.imie;
+
+--### KTORY PRACOWNIK UZYWAL DANEGO POJAZDU
+SELECT p.imie, p.nazwisko, p.PESEL, s.stanowisko, s.opis, s.pensja_netto, po.marka, po.model, po.nr_rej, t.typ, t.opis
+FROM pracownik p JOIN stanowisko s ON p.idstanowisko=s.idstanowisko
+JOIN faktura f ON p.idpracownik=f.idpracownik
+JOIN zamowienie z ON z.idfaktura=f.idfaktura 
+JOIN pojazd po ON po.idpojazd=z.idpojazd
+JOIN typ_pojazdu t ON t.idtyp_pojazdu=po.idtyp_pojazdu;
+
+--update adres set miejscowosc=UPPER(miejscowosc);
 --SELECT * FROM filia JOIN adres ON filia.idadres=adres.idadres;
 --DBCC CHECKIDENT (FAKTURA,RESEED,0);
