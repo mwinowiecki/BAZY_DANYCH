@@ -191,7 +191,8 @@ FROM pracownik p JOIN stanowisko s ON p.idstanowisko=s.idstanowisko
 JOIN faktura f ON p.idpracownik=f.idpracownik
 JOIN zamowienie z ON z.idfaktura=f.idfaktura 
 JOIN pojazd po ON po.idpojazd=z.idpojazd
-JOIN typ_pojazdu t ON t.idtyp_pojazdu=po.idtyp_pojazdu;
+JOIN typ_pojazdu t ON t.idtyp_pojazdu=po.idtyp_pojazdu
+ORDER BY p.nazwisko, p.imie;
 
 --update adres set miejscowosc=UPPER(miejscowosc);
 --SELECT * FROM filia JOIN adres ON filia.idadres=adres.idadres;
