@@ -1,33 +1,8 @@
 --################### UTWORZENIE BAZY DANYCH ##########################
 
-CREATE DATABASE TEST;
-
---DROP DATABASE TEST;
+CREATE DATABASE firma_spedycyjna;
 
 --####################### TWORZENIE TABEL #############################
-
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='zamowienie')
-DROP TABLE zamowienie;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='faktura')
-DROP TABLE faktura;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='pojazd')
-DROP TABLE pojazd;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='typ_pojazdu')
-DROP TABLE typ_pojazdu;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='pracownik')
-DROP TABLE pracownik;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='filia')
-DROP TABLE filia;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='stanowisko')
-DROP TABLE stanowisko;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='adres_docelowy')
-DROP TABLE adres_docelowy;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='klient')
-DROP TABLE klient;
-IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='adres')
-DROP TABLE adres;
-
-GO
 
 CREATE TABLE adres (
   idadres INT IDENTITY(1,1) PRIMARY KEY,
@@ -96,7 +71,7 @@ CREATE TABLE pracownik (
 CREATE TABLE faktura (
   idfaktura INT IDENTITY(1,1) PRIMARY KEY,
   idadres_docelowy INT CONSTRAINT idadr_doc_fk FOREIGN KEY(idadres_docelowy) REFERENCES adres_docelowy(idadres_docelowy),
-  idpracownik INT CONSTRAINT idpracownik_fk FOREIGN KEY(idpracownik) REFERENCES pracownik(idpracownik) ON DELETE CASCADE,
+  idpracownik INT CONSTRAINT idpracownik_fk FOREIGN KEY(idpracownik) REFERENCES pracownik(idpracownik),
   idklient INT CONSTRAINT idklient_fk FOREIGN KEY(idklient) REFERENCES klient(idklient),
   dystans_km INT NOT NULL CHECK(dystans_km>0),
   cena_razem_netto MONEY NOT NULL,
@@ -131,6 +106,7 @@ INSERT INTO adres_docelowy VALUES ('ANNA','NOWAK','DWORCOWA','2','SZCZECINEK','7
 INSERT INTO adres_docelowy VALUES ('PELAGIA','STOLARZ','KONSTYTUCJI 3 MAJA','10','TORUN','87-120');
 INSERT INTO adres_docelowy VALUES ('GENOWEFA','PIGWA','AKACJOWA','5','KRAKOW','31-466');
 INSERT INTO adres_docelowy VALUES ('MARIAN','KOSMOS','KOCHANOWSKIEGO','14','GDANSK','80-200');
+
 
 --### TAB klient
 INSERT INTO klient VALUES (1,'STEFAN','BURCZYMUCHA','90052443528','5934168314');
@@ -176,7 +152,6 @@ INSERT INTO faktura VALUES (6,1,2,75,123.52,0.23,123.52*1.23,'2009-09-24','2009-
 --TAB zamowienie
 INSERT INTO zamowienie VALUES(4,1);
 INSERT INTO zamowienie VALUES(2,2);
-INSERT INTO zamowienie VALUES(1,3);
 
 --######################## WYSWIETLENIE TABEL #########################
 
@@ -221,7 +196,7 @@ JOIN zamowienie z ON z.idfaktura=f.idfaktura
 JOIN pojazd po ON po.idpojazd=z.idpojazd
 JOIN typ_pojazdu t ON t.idtyp_pojazdu=po.idtyp_pojazdu
 ORDER BY p.nazwisko, p.imie;
-
+GO
 
 
 --1) widok 1
@@ -275,7 +250,7 @@ BEGIN
 END
 GO
 
-SELECT dbo.akt_klienta(6) AS ile_transportow;
+SELECT dbo.akt_klienta(6) AS ile_transportow_do;
 
 --4) funkcja 2
 --FUNKCJA KTORA WYPISUJE ILOSC TRANSPORTOW WYKONANYCH W DANYM ROKU. 
@@ -344,8 +319,6 @@ GO
 EXECUTE dodaj_prac 'MARCIN','WOLNY','8456365459','SZYBKA','15C','BLISKIE','66-856',2,3;
 GO
 
-SELECT * FROM pracownik;
-GO
 --8) procedura 2
 -- NOWE ZAMOWIENIE (TWORZENIE NOWEJ FAKTURY)
 IF EXISTS(SELECT * FROM SYS.objects WHERE type='P' AND name='nowe_zamowienie')
@@ -420,8 +393,6 @@ AS
 GO
 
 EXECUTE zwieksz_pensje 2,10.0;	-- ZWIEKSZAMY PENSJE NA STANOWISKU Z id = 2 O 10 PROCENT 
-
-SELECT * FROM stanowisko;
 
 --11) wyzwalacz 1
 --WYZWALACZ DO PROCEDURY dodaj_sam
@@ -543,7 +514,7 @@ END
 DELETE FROM pracownik WHERE idpracownik = 1;
 SELECT * FROM pracownik;
 SELECT  * FROM pracownik_kopia;
+
 --15) pivot 1
 
 --16) pivot 2
-
