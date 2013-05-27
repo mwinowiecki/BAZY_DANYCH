@@ -1,6 +1,8 @@
 --################### UTWORZENIE BAZY DANYCH ##########################
 
-CREATE DATABASE firma_spedycyjna;
+CREATE DATABASE TEST;
+
+--DROP DATABASE TEST;
 
 --####################### TWORZENIE TABEL #############################
 
@@ -94,7 +96,7 @@ CREATE TABLE pracownik (
 CREATE TABLE faktura (
   idfaktura INT IDENTITY(1,1) PRIMARY KEY,
   idadres_docelowy INT CONSTRAINT idadr_doc_fk FOREIGN KEY(idadres_docelowy) REFERENCES adres_docelowy(idadres_docelowy),
-  idpracownik INT CONSTRAINT idpracownik_fk FOREIGN KEY(idpracownik) REFERENCES pracownik(idpracownik),
+  idpracownik INT CONSTRAINT idpracownik_fk FOREIGN KEY(idpracownik) REFERENCES pracownik(idpracownik) ON DELETE CASCADE,
   idklient INT CONSTRAINT idklient_fk FOREIGN KEY(idklient) REFERENCES klient(idklient),
   dystans_km INT NOT NULL CHECK(dystans_km>0),
   cena_razem_netto MONEY NOT NULL,
@@ -129,7 +131,6 @@ INSERT INTO adres_docelowy VALUES ('ANNA','NOWAK','DWORCOWA','2','SZCZECINEK','7
 INSERT INTO adres_docelowy VALUES ('PELAGIA','STOLARZ','KONSTYTUCJI 3 MAJA','10','TORUN','87-120');
 INSERT INTO adres_docelowy VALUES ('GENOWEFA','PIGWA','AKACJOWA','5','KRAKOW','31-466');
 INSERT INTO adres_docelowy VALUES ('MARIAN','KOSMOS','KOCHANOWSKIEGO','14','GDANSK','80-200');
-
 
 --### TAB klient
 INSERT INTO klient VALUES (1,'STEFAN','BURCZYMUCHA','90052443528','5934168314');
@@ -220,7 +221,8 @@ JOIN zamowienie z ON z.idfaktura=f.idfaktura
 JOIN pojazd po ON po.idpojazd=z.idpojazd
 JOIN typ_pojazdu t ON t.idtyp_pojazdu=po.idtyp_pojazdu
 ORDER BY p.nazwisko, p.imie;
-GO
+
+
 
 --1) widok 1
 -- DO JAKIEGO MIASTA I ILE RAZY REALIZOWANO USLUGE TRANSPORTU
@@ -260,20 +262,77 @@ WHERE dystans = (SELECT MAX(dystans) FROM najdalej);
 GO
 
 --3) funkcja 1
+--FUNKCJA PODAJE NAM ILE RAZY DANY KLIENT KORZYSTAL Z NASZYCH USLUG. IM WIECEJ TYM WIEKSZY MOZE DOSTAC RABAT
+IF OBJECT_ID('dbo.akt_klienta') IS NOT NULL
+DROP FUNCTION dbo.akt_klienta;
+GO
+
+CREATE FUNCTION dbo.akt_klienta(@idklient INT) RETURNS INT
+BEGIN
+	RETURN (SELECT COUNT(*) FROM klient k
+	JOIN faktura f ON k.idklient=f.idklient
+	WHERE k.idklient=@idklient)
+END
+GO
+
+SELECT dbo.akt_klienta(6) AS ile_transportow;
 
 --4) funkcja 2
+--FUNKCJA KTORA WYPISUJE ILOSC TRANSPORTOW WYKONANYCH W DANYM ROKU. 
+--PRZYDATNE, GDY CHCEMY SPRAWDZIC JAK PROSPEROWALA FIRMA W POSZCZEGOLNYCH LATACH
+IF OBJECT_ID('dbo.raport_roczny') IS NOT NULL
+DROP FUNCTION dbo.raport_roczny;
+GO
+
+CREATE FUNCTION dbo.raport_roczny(@rok_od DATETIME, @rok_do DATETIME) RETURNS INT
+BEGIN
+	RETURN(SELECT COUNT(*) FROM faktura WHERE data_wyjazdu BETWEEN @rok_od AND @rok_do)
+END
+GO
+
+SELECT dbo.raport_roczny('2009','2010') AS 'ILOSC_WYJAZDOW';
 
 --5) funkcja 3
+--FUNKCJA PODAJE NAM SREDNIA DLUGOSC POKONANYCH TRAS
+--FIRMA MOZE SPRAWDZAC W JAKIEJ ODLEGLOSCI
+IF OBJECT_ID('dbo.sred_dystans') IS NOT NULL
+DROP FUNCTION dbo.sred_dystans;
+GO
+
+CREATE FUNCTION dbo.sred_dystans() RETURNS FLOAT
+BEGIN
+	RETURN(SELECT AVG(dystans_km) FROM faktura)
+END
+GO
+
+SELECT dbo.sred_dystans() AS 'SREDNIA DLUGOSC TRASY [km]';
 
 --6) funkcja 4
+--FUNKCJA PODAJE NAM SUME KILOMETROW PRZEJECHANYCH PRZEZ DANEGO KIEROWCE
+IF OBJECT_ID('dbo.suma_km') IS NOT NULL
+DROP FUNCTION dbo.suma_km;
+GO
+
+CREATE FUNCTION dbo.suma_km (@idp INT) RETURNS FLOAT
+BEGIN
+	DECLARE @suma FLOAT
+	SET @suma = 0
+	SELECT @suma=@suma+f.dystans_km FROM pracownik p JOIN faktura f
+		ON p.idpracownik=f.idpracownik WHERE f.idpracownik=@idp
+	RETURN @suma
+END
+GO
+
+SELECT dbo.suma_km(1) as 'SUMA KILOMETROW';
 
 --7) procedura 1
 -- PROCEDURA DODAWANIA NOWEGO PRACOWNIKA (NIE TRZEBA PAMIETAC id OSTATNIEGO ADRESU W TABELI adres)
+-- NALEZY PODAC DANE W ODPOWIEDNIEJ KOLEJNOSCI, A PROCEDURA SAMA ZADBA O POPRAWNE DODANIE REKORDOW
 IF EXISTS(SELECT * FROM SYS.objects WHERE type='P' AND name='dodaj_prac')
 DROP PROCEDURE dodaj_prac;
 GO
 CREATE PROCEDURE dodaj_prac 
-  @imie VARCHAR(20), @nazw VARCHAR(30), @PESEL CHAR(11), @ulica VARCHAR(30), @nr_domu VARCHAR(10), @miasto VARCHAR(30), @kod_pocz CHAR(6), @idfilia INT, 
+	@imie VARCHAR(20), @nazw VARCHAR(30), @PESEL CHAR(11), @ulica VARCHAR(30), @nr_domu VARCHAR(10), @miasto VARCHAR(30), @kod_pocz CHAR(6), @idfilia INT, 
 	@idstanowisko INT
 AS
 	INSERT INTO adres VALUES(@ulica,@nr_domu,@miasto,@kod_pocz)
@@ -287,7 +346,6 @@ GO
 
 SELECT * FROM pracownik;
 GO
-
 --8) procedura 2
 -- NOWE ZAMOWIENIE (TWORZENIE NOWEJ FAKTURY)
 IF EXISTS(SELECT * FROM SYS.objects WHERE type='P' AND name='nowe_zamowienie')
@@ -322,8 +380,8 @@ AS
 	INSERT INTO zamowienie VALUES (@idpoj,@max_id_fak)
 GO
 
-EXECUTE nowe_zamowienie 'MARIAN','ZUK','PUSTA','10/3','ILAWA','80-632',5,'MICHAL','KTOPYTAL',
-		84032512532,NULL,'CICHA','3','UJSCIE','12-345',260,400,0.23,'2010-10-23','2010-10-25',3
+EXECUTE nowe_zamowienie 'ZENON','BIEDRONKA','PILSKA','10/3','ILAWA','80-632',5,'MICHAL','OJCZENASZ',
+		84032512532,NULL,'CEGIELNIANA','4E/55','TUCHOLA','89-501',260,400,0.23,'2010-10-23','2010-10-25',3
 GO
 
 --9) procedura 3
@@ -367,6 +425,7 @@ SELECT * FROM stanowisko;
 
 --11) wyzwalacz 1
 --WYZWALACZ DO PROCEDURY dodaj_sam
+-- WYSWIETLA DANE OSTATNIO DODANEGO SAMOCHODU
 IF EXISTS (SELECT * FROM sys.objects WHERE type='TR' AND name='dodano_samochod')
 DROP TRIGGER dodano_samochod;
 GO
@@ -378,46 +437,47 @@ BEGIN
 	DECLARE @id INT
 	SET @id = (SELECT MAX(idpojazd) FROM pojazd)
 	
-	PRINT 'DODANO NOWY SAMOCHOD!'
+	SELECT 'DODANO NOWY SAMOCHOD!'
 	SELECT * FROM pojazd WHERE idpojazd=@id
 END
 GO
 	
-EXECUTE dodaj_sam 'RENAULT','KANGOO','WE 96325','OSOBOWY',1.5,'PRZEWOZ OSOB I DROBNYCH TOWAROW'
+EXECUTE dodaj_sam 'RENAULT','KANGOO','WE 12852','OSOBOWY',1.8,'PRZEWOZ OSOB I DROBNYCH TOWAROW'
 GO
 
 --12) wyzwalacz 2
-IF EXISTS (SELECT * FROM sys.objects WHERE type='TR' AND name='duplikat_adresu')
-DROP TRIGGER duplikat_adresu;
+--WYZWALACZ TEN "PILNUJE", ABYSMY NIE ZDUBLOWALI KTOREGOS Z ADRESOW DOCELOWYCH
+IF EXISTS (SELECT * FROM sys.objects WHERE type='TR' AND name='duplikat_adresu_doc')
+DROP TRIGGER duplikat_adresu_doc;
 GO
---DOPRACOWAC...
-CREATE TRIGGER duplikat_adresu ON adres
+
+CREATE TRIGGER duplikat_adresu_doc ON adres_docelowy
 INSTEAD OF INSERT
 AS
 BEGIN
+	DECLARE @imie VARCHAR(20), @naz VARCHAR(30), @ul VARCHAR(30), @nr VARCHAR(10), @miej VARCHAR(30), @kod CHAR(6)
+	
+	SELECT @imie=imie, @naz=nazwisko, @ul=ulica, @nr=nr_domu, 
+		@miej=miejscowosc, @kod=kod_pocz FROM inserted
+	
 	SET NOCOUNT ON
-	IF NOT EXISTS (SELECT a.ulica, a.nr_domu, a.miejscowosc, a.kod_poczt
-		FROM adres a, inserted i
-		WHERE a.ulica=i.ulica AND a.nr_domu=i.nr_domu AND a.miejscowosc=i.miejscowosc
-			AND a.kod_poczt=i.kod_poczt)
-		INSERT INTO adres
-			SELECT ulica,nr_domu,miejscowosc,kod_poczt
-			FROM inserted
+	IF NOT EXISTS (
+	SELECT *
+	FROM adres_docelowy a, inserted i
+	WHERE (a.imie=i.imie) AND (a.nazwisko=i.nazwisko) AND (a.ulica=i.ulica) AND (a.nr_domu=i.nr_domu) 
+	AND (a.miejscowosc=i.miejscowosc) AND (a.kod_pocz=i.kod_pocz))
+	BEGIN
+		INSERT INTO adres_docelowy VALUES (@imie,@naz,@ul, @nr, @miej, @kod)
+	END
 	ELSE
-		DECLARE @id INT
-		SET @id = (SELECT a.idadres FROM adres a, inserted i 
-					WHERE a.ulica=i.ulica AND a.nr_domu=i.nr_domu AND a.miejscowosc=i.miejscowosc
-					AND a.kod_poczt=i.kod_poczt)
-		
-		PRINT 'DUPLIKAT ADRESU'
-		RAISERROR('NIE MOZNA DODAC NOWEGO ADRESU!',1,2) 
-		ROLLBACK	
+		BEGIN
+			RAISERROR('NIE MOZNA DODAC NOWEGO ADRESU! ADRES JUZ ISTNIEJE...',1,2)	
+			ROLLBACK
+		END		
 END
 GO
 
-INSERT INTO adres VALUES('CEGIELNIANA','6A/1','TUCHOLA','89-501')
-
-SELECT * FROM adres;
+INSERT INTO adres_docelowy VALUES('ZENON','BIEDRONKA','PILSKA','10/3','ILAWA','80-632')
 
 --13) wyzwalacz 3
 --WYZWALACZ WYSWIETLAJACY ZMODYFIKOWANE WIERSZE PO ZMIANIE DANYCH KLIENTA
@@ -441,7 +501,48 @@ GO
 UPDATE klient SET imie='WOJTEK' WHERE idklient=1;
 
 --14) wyzwalacz 4
+--WYZWALACZ TWORZACY "KOPIE ZAPASOWA" USUNIETYCH REKORDOW Z TABELI pracownik  W TABELI pracownik_kopia
+IF EXISTS (SELECT * FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME='pracownik_kopia')
+DROP TABLE pracownik_kopia;
+GO
+CREATE TABLE pracownik_kopia (
+  idpracownik INT IDENTITY(1,1) PRIMARY KEY,
+  idfilia INT CONSTRAINT idfilia_fk2 FOREIGN KEY(idfilia) REFERENCES filia(idfilia),
+  idadres INT CONSTRAINT idadres_pracow_fk2 FOREIGN KEY(idadres) REFERENCES adres(idadres),
+  idstanowisko INT CONSTRAINT idstanowisko_fk2 FOREIGN KEY(idstanowisko) REFERENCES stanowisko(idstanowisko),
+  imie VARCHAR(20) NOT NULL,
+  nazwisko VARCHAR(30) NOT NULL,
+  PESEL CHAR(11) UNIQUE NOT NULL,
+);
 
+IF EXISTS (SELECT * FROM sys.objects WHERE type='TR' AND name='kopia_zapas')
+DROP TRIGGER kopia_zapas;
+GO
+
+CREATE TRIGGER kopia_zapas ON pracownik
+FOR DELETE
+AS
+BEGIN
+	DECLARE kopia_zapas CURSOR
+	FOR SELECT idpracownik, idfilia, idadres, idstanowisko, imie, nazwisko, PESEL FROM deleted;
+	
+	OPEN kopia_zapas
+	DECLARE @idp INT, @idf INT, @ida INT, @ids INT, @imie VARCHAR(20), @naz VARCHAR(30), @pes CHAR(11)
+	FETCH NEXT FROM kopia_zapas INTO @idp, @idf, @ida, @ids, @imie, @naz, @pes
+	
+	WHILE @@FETCH_STATUS=0
+	BEGIN
+		INSERT pracownik_kopia SELECT idfilia,idadres,idstanowisko,imie,nazwisko,PESEL
+		FROM deleted WHERE idpracownik=@idp
+	END
+	
+	CLOSE kursor_przep
+	DEALLOCATE kursor_przep
+END
+
+DELETE FROM pracownik WHERE idpracownik = 1;
+SELECT * FROM pracownik;
+SELECT  * FROM pracownik_kopia;
 --15) pivot 1
 
 --16) pivot 2
