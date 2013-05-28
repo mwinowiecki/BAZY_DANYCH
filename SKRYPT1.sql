@@ -1,6 +1,11 @@
 --################### UTWORZENIE BAZY DANYCH ##########################
+USE master;
+
+IF EXISTS (SELECT * FROM sys.databases WHERE name='firma_spedycyjna')
+DROP DATABASE firma_spedycyjna
 
 CREATE DATABASE firma_spedycyjna;
+USE firma_spedycyjna;
 
 --####################### TWORZENIE TABEL #############################
 
@@ -531,10 +536,49 @@ BEGIN
 END
 GO
 
-SELECT * FROM pracownik_kopia;
-DELETE FROM pracownik WHERE idpracownik = 1;
 SELECT * FROM pracownik;
+DELETE FROM pracownik WHERE idpracownik = 3;
+SELECT * FROM pracownik_kopia;
 
 --15) pivot 1
+--TABELA PRZESTAWNA UKAZUJACA PRZYCHOD DANEGO KIEROWCY W WYBRANYCH LATACH LATACH
+SELECT p.idpracownik, p.imie, p.nazwisko, [2009],[2010]
+FROM 
+(
+	SELECT p.idpracownik, p.imie, p.nazwisko, YEAR(data_wyjazdu) AS przychod_pracow, cena_razem_brutto
+	FROM faktura f JOIN pracownik p ON f.idpracownik=p.idpracownik
+) tabela
+PIVOT
+(
+	SUM(cena_razem_brutto)
+	FOR przychod_pracow IN ([2009],[2010])
+)
+AS p
+ORDER BY idpracownik;
+
+SELECT * FROM faktura;
 
 --16) pivot 2
+--TABELA PRZESTAWNA UKAZUJACA ILE KILOMERTOW W ROKU PRZEJECHAL DANY POJAZD
+
+EXECUTE nowe_zamowienie 'ANDRZEJ','SLABY','KROTKA','2','POZNAN','25-522',4,'PIOTR','KROL',
+		84031512862,6325451685,'DLUGA','30','SZCZECIN','36-451',365,426.55,0.23,'2009-03-10','2009-03-12',2
+GO
+
+SELECT p.idpojazd, p.marka, p.model, p.nr_rej, [2009], [2010]
+FROM 
+(
+	SELECT p.idpojazd, p.marka, p.model, p.nr_rej, YEAR(f.data_wyjazdu) AS suma_km, dystans_km 
+	FROM 
+	faktura f JOIN zamowienie z ON f.idfaktura=z.idfaktura
+	JOIN pojazd p ON z.idpojazd=p.idpojazd
+) tabela
+PIVOT
+(
+	SUM(dystans_km)
+	FOR suma_km IN ([2009],[2010])
+)
+AS p
+ORDER BY idpojazd;
+
+SELECT * FROM faktura;
