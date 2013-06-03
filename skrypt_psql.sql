@@ -214,183 +214,95 @@ ORDER BY p.nazwisko, p.imie;
 
 --1) widok 1
 -- DO JAKIEGO MIASTA I ILE RAZY REALIZOWANO USLUGE TRANSPORTU
-
-
 DROP VIEW IF EXISTS ile_miasto;
 
-
-
 CREATE VIEW ile_miasto AS
-
 SELECT ad.miejscowosc, COUNT(ad.miejscowosc) AS ile_razy
-
 FROM klient k JOIN faktura f 
-ON k.idklient=f.idklient
- JOIN adres_docelowy ad 
+ON k.idklient=f.idklient JOIN adres_docelowy ad 
 ON ad.idadres_docelowy=f.idadres_docelowy
 GROUP BY ad.miejscowosc;
 
-
-
 SELECT * FROM ile_miasto WHERE ile_razy>1;
-
-
-
 
 --2) widok 2
 -- DANE PRACOWNIKA I SAMOCHODU Z NAJDLUZSZYM WYKONANYM POJEDYNCZYM ZADANIEM
-
-
 DROP VIEW IF EXISTS najdalej;
 
-
-
 CREATE VIEW najdalej AS
-
 SELECT p.imie, p.nazwisko, p.PESEL, s.stanowisko, po.marka, po.model, po.nr_rej, t.typ, f.dystans_km AS dystans
-
 FROM pracownik p JOIN stanowisko s 
-ON p.idstanowisko=s.idstanowisko
- JOIN faktura f 
-ON p.idpracownik=f.idpracownik
- JOIN zamowienie z 
-ON z.idfaktura=f.idfaktura 
-JOIN pojazd po 
-ON po.idpojazd=z.idpojazd 
-JOIN typ_pojazdu t 
+ON p.idstanowisko=s.idstanowisko JOIN faktura f 
+ON p.idpracownik=f.idpracownik JOIN zamowienie z 
+ON z.idfaktura=f.idfaktura JOIN pojazd po 
+ON po.idpojazd=z.idpojazd JOIN typ_pojazdu t 
 ON t.idtyp_pojazdu=po.idtyp_pojazdu
-
-
 GROUP BY p.imie, p.nazwisko, p.PESEL, s.stanowisko, po.marka, po.model, po.nr_rej, t.typ, f.dystans_km
-
-
 HAVING f.dystans_km>0;
 
-
-
 SELECT * FROM najdalej 
-
 WHERE dystans = (SELECT MAX(dystans) FROM najdalej);
-
-
-
-
 
 --3) funkcja 1
 --FUNKCJA PODAJE NAM ILE RAZY DANY KLIENT KORZYSTAL Z NASZYCH USLUG. IM WIECEJ TYM WIEKSZY MOZE DOSTAC RABAT
-
-
 DROP FUNCTION IF EXISTS akt_klienta(INT);
 
-
-
-CREATE FUNCTION akt_klienta(id_klient INT)
- 
+CREATE FUNCTION akt_klienta(id_klient INT) 
 RETURNS INTEGER AS $$
-
-
 BEGIN
-  
-  RETURN (SELECT COUNT(*) FROM klient k
-	JOIN faktura f 
-  ON k.idklient=f.idklient
- WHERE k.idklient=id_klient);
-
+  RETURN (SELECT COUNT(*) FROM klient k	JOIN faktura f 
+  ON k.idklient=f.idklient WHERE k.idklient=id_klient);
 END;
-
 $$
-
 LANGUAGE 'plpgsql';
-
-
 
 SELECT akt_klienta(6) AS ile_transportow;
 
-
-
-
 --4) funkcja 2
 --FUNKCJA KTORA WYPISUJE ILOSC TRANSPORTOW WYKONANYCH W DANYM ROKU. 
-
 --PRZYDATNE, GDY CHCEMY SPRAWDZIC JAK PROSPEROWALA FIRMA W POSZCZEGOLNYCH LATACH
-
-
 DROP FUNCTION IF EXISTS raport_roczny(DATE,DATE);
-
-
 
 CREATE FUNCTION raport_roczny(rok_od DATE, rok_do DATE)
 RETURNS INTEGER AS $$
-
-
 BEGIN
-  RETURN(SELECT COUNT(*) FROM faktura WHERE data_wyjazdu BETWEEN rok_od AND rok_do);
-
+  RETURN(SELECT COUNT(*) FROM faktura 
+  WHERE data_wyjazdu BETWEEN rok_od AND rok_do);
 END;
-
 $$
-
 LANGUAGE 'plpgsql';
-
-
 
 SELECT raport_roczny('2009-01-01','2010-01-01') AS ILOSC_WYJAZDOW;
 
-
-
-
 --5) funkcja 3
 --FUNKCJA PODAJE NAM SREDNIA DLUGOSC POKONANYCH TRAS
-
 --FIRMA MOZE SPRAWDZAC W JAKIEJ ODLEGLOSCI
-
-
 DROP FUNCTION IF EXISTS sred_dystans();
 
-
-
 CREATE FUNCTION sred_dystans() 
-  
 RETURNS FLOAT AS $$
 BEGIN
   RETURN(SELECT AVG(dystans_km) FROM faktura);
 END;
 $$
-
 LANGUAGE 'plpgsql';
 
 SELECT sred_dystans() AS SREDNIA_DLUGOSC_TRASY_km;
 
-
 --6) funkcja 4
 --FUNKCJA PODAJE NAM SUME KILOMETROW PRZEJECHANYCH PRZEZ DANEGO KIEROWCE
-
-
 DROP FUNCTION IF EXISTS suma_km(INT);
 
-
-
 CREATE FUNCTION suma_km(idp INT) 
-  
 RETURNS FLOAT AS $$
-
-  
 DECLARE suma FLOAT;
-
-BEGIN	
-	
+BEGIN		
   suma:=0;
-
   SELECT suma=suma+f.dystans_km FROM pracownik p JOIN faktura f
   ON p.idpracownik=f.idpracownik WHERE f.idpracownik=idp;
   RETURN suma;
-
 END;
-
 $$
 LANGUAGE 'plpgsql';
 
-
-
-SELECT suma_km(1) as SUMA_KILOMETROW;       --tu cos do poprawki jest
---
+SELECT suma_km(1) as SUMA_KILOMETROW;       --tu cos do poprawki jest--
