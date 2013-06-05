@@ -293,16 +293,20 @@ SELECT sred_dystans() AS SREDNIA_DLUGOSC_TRASY_km;
 --FUNKCJA PODAJE NAM SUME KILOMETROW PRZEJECHANYCH PRZEZ DANEGO KIEROWCE
 DROP FUNCTION IF EXISTS suma_km(INT);
 
-CREATE FUNCTION suma_km(idp INT) 
-RETURNS FLOAT AS $$
+CREATE FUNCTION suma_km(idp INT)   
+RETURNS FLOAT 
+AS $$  
 DECLARE suma FLOAT;
-BEGIN		
+BEGIN  	
   suma:=0;
-  SELECT suma=suma+f.dystans_km FROM pracownik p JOIN faktura f
+  SELECT (f.dystans_km) INTO suma FROM pracownik p JOIN faktura f
   ON p.idpracownik=f.idpracownik WHERE f.idpracownik=idp;
   RETURN suma;
 END;
 $$
 LANGUAGE 'plpgsql';
 
-SELECT suma_km(1) as SUMA_KILOMETROW;       --tu cos do poprawki jest--
+SELECT suma_km(1) as SUMA_KILOMETROW;
+
+
+
