@@ -331,7 +331,7 @@ DECLARE
   idadres1 ALIAS FOR $10;
 
 BEGIN
-  INSERT INTO adres(idadres,ulica,nr_domu,miejscowosc,kod_poczt) VALUES (idadres1, ulica1,nr1,miasto1,kod1)
+  INSERT INTO adres(idadres,ulica,nr_domu,miejscowosc,kod_poczt) VALUES (idadres1, ulica1,nr1,miasto1,kod1);
   INSERT INTO pracownik(idpracownik,idfilia,idadres,idstanowisko,imie,nazwisko,PESEL) 
         VALUES (idprac,idfilia1,idadres1,imie1,nazw1,pesel1);
 END;
