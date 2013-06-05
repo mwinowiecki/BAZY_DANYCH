@@ -336,15 +336,8 @@ BEGIN
         VALUES (idprac,idfilia1,idadres1,imie1,nazw1,pesel1);
 END;
 $$ LANGUAGE 'plpgsql';
-GO
 
-
-
-
-EXECUTE dodaj_prac 
-
-'MARCIN','WOLNY','84563654598','SZYBKA','15C','BLISKIE','66-856',2,3;
-GO
+SELECT dodaj_prac(5,'MARCIN','WOLNY','84563654598','SZYBKA','15C','BLISKIE','66-856',2,3);
 
 SELECT * FROM pracownik;
 
